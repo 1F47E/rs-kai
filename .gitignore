@@ -1,0 +1,12 @@
+# Rust artifacts
+target/
+Cargo.lock
+
+# Ignore compiled executables
+**/target/debug/
+**/target/release/
+
+# Ignore VSCode settings
+.vscode/
+
+
