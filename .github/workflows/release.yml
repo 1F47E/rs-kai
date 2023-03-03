@@ -51,12 +51,23 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
 
-    - name: Bump personal tap formula
-      uses: mislav/bump-homebrew-formula-action@v1
-      env:
-        COMMITTER_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+    - name: Extract version
+      id: extract-version
+      run: |
+        printf "::set-output name=%s::%s\n" tag-name "${GITHUB_REF#refs/tags/}"
+
+    - name: Bump homebrew
+    - uses: mislav/bump-homebrew-formula-action@v2
+      if: "!contains(github.ref, '-')" # skip prereleases
       with:
         formula-name: kai
+        formula-path: Formula/kai.rb
         homebrew-tap: kaspar1ndustries/homebrew-kai
+        base-branch: master
         download-url: https://github.com/kaspar1ndustries/kai/releases/download/${{ steps.get_version.outputs.version }}/kai.tar.gz
+        commit-message: |
+          {{formulaName}} {{version}}
+
+      env:
+        COMMITTER_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
 
