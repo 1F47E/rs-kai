@@ -1,0 +1,13 @@
+
+First create your Open AI API key at https://platform.openai.com/account/api-keys
+
+Export your API key via env 
+export OPENAI_API_KEY=<your key>
+
+Build & install the app 
+
+cargo install
+
+Run the app
+
+kai <your query>
