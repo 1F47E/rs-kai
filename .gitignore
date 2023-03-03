@@ -5,6 +5,7 @@ Cargo.lock
 # Ignore compiled executables
 **/target/debug/
 **/target/release/
+*.tar.gz
 
 # Ignore VSCode settings
 .vscode/
