@@ -2,30 +2,45 @@
 use reqwest::header;
 use std::env;
 
-use serde::Deserialize;
+use serde::{Serialize, Deserialize};
 use spinners::{Spinner, Spinners};
+use colored::Colorize;
+
+const OPENAI_COMPLETIONS_URL: &str = "https://api.openai.com/v1/completions";
+// const OPENAI_COMPLETIONS_URL: &str = "http://localhost:8889";
+
+// API request struct
+#[derive(Debug, Serialize, Deserialize)]
+struct Request {
+    model: String,
+    prompt: String,
+    max_tokens: u32,
+    top_p: f32,
+    frequency_penalty: f32,
+    presence_penalty: f32,
+}
 
 // API response structs
 #[derive(Debug, Deserialize)]
-struct TextCompletion {
-    choices: Vec<Choice>,
+struct Response {
+    choices: Vec<ResponseChoice>,
 }
 
 #[derive(Debug, Deserialize)]
-struct Choice {
+struct ResponseChoice {
     text: String,
 }
 
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // get the api key
+    // get the api key from env
     let mut api_key = String::new();
     match env::var("OPENAI_API_KEY") {
         Ok(val) => {
             api_key.push_str(&val);
         }
         Err(_e) => {
-            println!("OPENAI_API_KEY env not found");
+            println!("{}", "OPENAI_API_KEY env not found".red());
             return Ok(());
         }
     }
@@ -45,40 +60,60 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let auth_header = format!("Bearer {}", api_key);
     headers.insert("Authorization", auth_header.parse().unwrap());
 
-    let payload = r#"{
-  "model": "text-davinci-003",
-  "prompt": "Question:\n{PROMPT}\nAnswer:",
-  "max_tokens": 64,
-  "top_p": 1.0,
-  "frequency_penalty": 0.0,
-  "presence_penalty": 0.0
-}"#.replace("{PROMPT}", &query);
+    let p = format!("Question:\n{}\nAnswer:", query);
+    let req = Request {
+        model: "text-davinci-003".to_string(),
+        prompt: p,
+        max_tokens: 256, // TODO: allow to configure this via args
+        top_p: 1.0,
+        frequency_penalty: 0.0,
+        presence_penalty: 0.0,
+    };
+    // serialize to json for post request
+    let req_res = serde_json::to_string(&req);
+    let mut req_json = String::new();
+    match req_res {
+        Ok(_val) => {
+            req_json.push_str(&_val);
+        }
+        Err(_e) => {
+            println!("{}", "Failed to serialize request".red());
+            return Ok(());
+        }
+    }
 
 
     let client = reqwest::blocking::Client::new();
 
-    // start loading animation
-    let mut sp = Spinner::new(Spinners::Dots9, "Thinking...".into());
+    // start loading 
+    let loading_str = format!("{}", "Thinking...".green());
+    let mut sp = Spinner::new(Spinners::Dots12, loading_str.into());
 
     // do request
-    let res = client.post("https://api.openai.com/v1/completions")
-    // let res = client.post("http://localhost:8889")
+    // TODO: proper handle errors
+    let res = client.post(OPENAI_COMPLETIONS_URL)
         .headers(headers)
-        .body(payload)
+        .body(req_json)
         .send()?
         .text()?;
 
-    // stop the animation
+    // stop loading
     sp.stop_with_message("".to_string());
 
-    let result: TextCompletion = serde_json::from_str(&res.to_string()).unwrap();
-    // check if we have a result
-    if result.choices.len() < 1 {
-        println!("No result");
-        return Ok(());
+    // parse the response
+    let result: Result<Response, serde_json::Error> = serde_json::from_str(&res.to_string());
+    match result {
+        Ok(r) => {
+            if r.choices.len() == 0 {
+                println!("{}", "No results".red());
+            }
+            println!("{}", r.choices[0].text);
+        },
+        Err(err) => {
+            // Handle the error
+            println!("{} {}", "Error deserializing response:".red(), err);
+        }
     }
-    let answer = &result.choices[0].text;
-    println!("{}", answer);
 
     Ok(())
 }
