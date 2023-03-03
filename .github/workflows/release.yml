@@ -40,14 +40,10 @@ jobs:
       run: |
         echo ::set-output name=sha::"$(shasum -a 256 ./brew/kai.tar.gz | awk '{printf $1}')"
 
-    - name: Extract release notes
-      id: release_notes
-      uses: ffurrer2/extract-release-notes@v1
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
-        body: ${{ steps.release_notes.outputs.release_notes }}
-        prerelease: ${{ contains(github.ref, '-') }}
+        body: 'another release'
         files: |
           ./brew/*.tar.gz
 
