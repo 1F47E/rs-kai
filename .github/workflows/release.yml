@@ -1,0 +1,64 @@
+name: HOMEBREW-RELEASE
+
+on:
+  push:
+   tags:
+     - '*'
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Get version
+      id: get_version
+      run: echo ::set-output name=version::${GITHUB_REF/refs\/tags\//}
+
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        profile: minimal
+        override: true
+        components: clippy
+
+    - name: Build
+      run: cargo build --release
+
+    - name: Tar
+      run: ./brew/run.sh
+
+    - name: Set SHA
+      id: shasum
+      run: |
+        echo ::set-output name=sha::"$(shasum -a 256 ./brew/kai.tar.gz | awk '{printf $1}')"
+
+    - name: Extract release notes
+      id: release_notes
+      uses: ffurrer2/extract-release-notes@v1
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      with:
+        body: ${{ steps.release_notes.outputs.release_notes }}
+        prerelease: ${{ contains(github.ref, '-') }}
+        files: |
+          ./brew/*.tar.gz
+
+      env:
+        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+    - name: Bump personal tap formula
+      uses: mislav/bump-homebrew-formula-action@v1
+      env:
+        COMMITTER_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+      with:
+        formula-name: kai
+        homebrew-tap: kaspar1ndustries/homebrew-kai
+        download-url: https://github.com/kaspar1ndustries/kai/releases/download/${{ steps.get_version.outputs.version }}/kai.tar.gz
+
