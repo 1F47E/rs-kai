@@ -1,13 +1,34 @@
-
+// Author: Kai Kousa
+// License: MIT
+// Description: CLI for OpenAI API
+// Dependencies: reqwest, serde, serde_json, confy, dirs, spinners, colored
+// Usage: kai <query>
+// Example: kai "What is the meaning of life?"
+//
+// config file should be found at:
+// MacOS: "/Users/user/Library/Application Support/rs.kai/kai.toml"
+//
+//
+//
 use reqwest::header;
 use std::env;
+
 
 use serde::{Serialize, Deserialize};
 use spinners::{Spinner, Spinners};
 use colored::Colorize;
 
+
+const APP_NAME: &str = "kai";
+const CONFIG_NAME: &str = "config";
 const OPENAI_COMPLETIONS_URL: &str = "https://api.openai.com/v1/completions";
 // const OPENAI_COMPLETIONS_URL: &str = "http://localhost:8889";
+
+// config file 
+#[derive(Default, Debug, Serialize, Deserialize)]
+struct Config {
+    api_key: String,
+}
 
 // API request struct
 #[derive(Debug, Serialize, Deserialize)]
@@ -33,16 +54,23 @@ struct ResponseChoice {
 
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // get the api key from env
-    let mut api_key = String::new();
-    match env::var("OPENAI_API_KEY") {
-        Ok(val) => {
-            api_key.push_str(&val);
-        }
-        Err(_e) => {
-            println!("{}", "OPENAI_API_KEY env not found".red());
+    // get the api key from config
+    let cfg_result = confy::load(APP_NAME, CONFIG_NAME);
+    let cfg:Config = match cfg_result {
+        Ok(file) => file,
+        Err(error) => {
+            println!("{} {}", "Config error:".red(), error);
             return Ok(());
         }
+    };
+    // check api key exists
+    if cfg.api_key == "" {
+        println!("\n\nHello! this is <kai>, simple OpenAI GPT CLI client");
+        // print config file path
+        let config_path = confy::get_configuration_file_path(APP_NAME, CONFIG_NAME);
+        println!("Please set up your OpenAI API key in the configuration file at \n\n\"{}\"", config_path.unwrap().to_str().unwrap().green());
+        println!("\n\nYour keys can be found at https://platform.openai.com/account/api-keys");
+        return Ok(());
     }
 
     // collect args ane merge args into query
@@ -57,7 +85,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // build the request to API
     let mut headers = header::HeaderMap::new();
     headers.insert("Content-Type", "application/json".parse().unwrap());
-    let auth_header = format!("Bearer {}", api_key);
+    let auth_header = format!("Bearer {}", cfg.api_key);
     headers.insert("Authorization", auth_header.parse().unwrap());
 
     let p = format!("Question:\n{}\nAnswer:", query);

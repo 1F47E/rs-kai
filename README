@@ -1,13 +1,19 @@
+Welcome to Kai, a simple OpenAI GPT CLI client that lets you ask questions and get answers without leaving the console.
 
-First create your Open AI API key at https://platform.openai.com/account/api-keys
+Features:
+- Send queries to the OpenAI GPT API directly from the command line
+- Pipe outputs from other programs to get answers and insights
 
-Export your API key via env 
-export OPENAI_API_KEY=<your key>
+API KEY:
+Before you can use Kai, you need to set up your OpenAI API key. You can find your API keys at https://platform.openai.com/account/api-keys.
 
-Build & install the app 
+Install
+- Mac os homebrew:
+     - tap kaspar1ndustries/kai
+     - brew install kai
+- From source: clone this repo and do `cargo install kai`
 
-cargo install
+Getting started:
+- Set up your OpenAI API key in the configuration file at `/Users/<user>/Library/Application Support/rs.kai/config.toml`
+- Run Kai with the command `kai <your query>`
 
-Run the app
-
-kai <your query>
