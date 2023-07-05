@@ -1,4 +1,13 @@
-Welcome to Kai, a simple OpenAI GPT CLI client that lets you ask questions and get answers without leaving the console.
+
+      _         _ 
+     | |       (_)
+     | | ____ _ _ 
+     | |/ / _` | |
+     |   < (_| | |
+     |_|\_\__,_|_|
+                                  
+    
+KAI - simple OpenAI GPT CLI tool that lets you ask questions and get answers without leaving the console.
 
 Features:
 - Send queries to the OpenAI GPT API directly from the command line
